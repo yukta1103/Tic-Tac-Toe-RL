@@ -169,7 +169,8 @@ def evaluate_agent(
     agent: Agent,
     episodes: int = 100,
     opponent: str = 'random',
-    render: bool = False
+    render: bool = False,
+    as_player: int = 1
 ) -> Tuple[dict, list]:
 
     env = TicTacToeEnv()
@@ -192,34 +193,104 @@ def evaluate_agent(
             env.render()
         
         while not done:
-            valid_actions = env.get_valid_actions()
-            action = agent.select_action(state, valid_actions, training=False)
-            state, reward, done, info = env.step(action)
-            episode_reward += reward
+            # Determine whose turn it is
+            current_player = 1 if len(env.get_valid_actions()) % 2 != 0 else -1
+            # Note: In this env, len(valid_actions) starts at 9 (odd) -> Player 1
+            # After 1 move, len is 8 (even) -> Player -1
+            # Logic: 9, 7, 5, 3, 1 -> Player 1's turn
+            # 8, 6, 4, 2 -> Player -1's turn
             
-            if render:
-                print("Agent (X) plays:")
-                env.render()
+            # Simple check: env.current_player
+            # But we need to know if it's AGENT or OPPONENT turn
+            
+            is_agent_turn = (env.current_player == as_player)
+            
+            if is_agent_turn:
+                valid_actions = env.get_valid_actions()
+                action = agent.select_action(state, valid_actions, training=False)
+                state, reward, done, info = env.step(action)
+                
+                # Reward interpretation:
+                # Env returns 1 if Player 1 wins, -1 if Player -1 wins
+                # If as_player=1, reward 1 is good (1 * 1 = 1)
+                # If as_player=-1, reward -1 is good (-1 * -1 = 1)
+                adjusted_reward = reward * as_player
+                episode_reward += adjusted_reward
+                
+                if render:
+                    print(f"Agent ({'X' if as_player==1 else 'O'}) plays:")
+                    env.render()
+            else:
+                valid_actions = env.get_valid_actions()
+                action = opponent_agent.select_action(state, valid_actions)
+                state, reward, done, info = env.step(action)
+                
+                # Opponent move doesn't give direct reward to agent usually, 
+                # unless game ends.
+                # If opponent wins (reward for them), it's bad for agent.
+                adjusted_reward = reward * as_player
+                # If reward is for winner:
+                # Opponent (P2) wins -> reward -1. Agent (P1) sees -1 * 1 = -1 (Loss). Correct.
+                # Opponent (P1) wins -> reward 1. Agent (P2) sees 1 * -1 = -1 (Loss). Correct.
+                episode_reward += adjusted_reward
+                
+                if render:
+                    print(f"Opponent ({'O' if as_player==1 else 'X'}) plays:")
+                    env.render()
             
             if done:
-                break
-            
-            valid_actions = env.get_valid_actions()
-            action = opponent_agent.select_action(state, valid_actions)
-            state, reward, done, info = env.step(action)
-            episode_reward += -reward
-            
-            if render:
-                print("Opponent (O) plays:")
-                env.render()
-        
-        stats.update(episode_reward, info)
+                # Update stats properly
+                # TrainingStats assumes 'winner' field in info
+                # If agent is Player 2 (-1), and winner is -1, that's a WIN for agent
+                # Info always has absolute winner (1 or -1)
+                
+                # We need to trick TrainingStats or just manually interpret?
+                # TrainingStats logic:
+                # elif info.get('winner') == 1: self.wins += 1
+                # elif info.get('winner') == -1: self.losses += 1
+                # This assumes Agent is Player 1.
+                
+                # We should update info to reflect Agent perspective relative to TrainingStats expectation?
+                # Or just manually increment stats.
+                # Let's fix TrainingStats usage here.
+                
+                # Actually TrainingStats is hardcoded for Player 1 being the "Self".
+                # Let's just calculate stats manually here for flexibility or create a dict.
+                pass
+
+        # Calculate result for this episode
         rewards.append(episode_reward)
         
-        if render and 'winner' in info:
-            winner = "Agent" if info['winner'] == 1 else "Opponent"
-            print(f"{winner} wins!")
-        elif render:
-            print("Draw!")
+        # Manual stats update to handle role correctly
+        winner = info.get('winner', 0)
+        draw = info.get('draw', False)
+        
+        # Create a proxy info dict for TrainingStats update if we want to reuse it,
+        # otherwise we might need to modify TrainingStats or just do manual mapping.
+        # Let's interpret for TrainingStats:
+        # If Agent WON, we want TrainingStats to log a WIN.
+        # TrainingStats logs WIN if info['winner'] == 1.
+        # So if Agent (-1) won, we tell TrainingStats winner=1.
+        # If Agent (-1) lost (Winner=1), we tell TrainingStats winner=-1.
+        
+        proxy_info = info.copy()
+        if 'winner' in info:
+            if info['winner'] == as_player:
+                proxy_info['winner'] = 1  # Map "Agent Won" to 1 for stats
+            else:
+                proxy_info['winner'] = -1 # Map "Agent Lost" to -1 for stats
+        
+        # Reward is usually 0 unless game end in this Env step return?
+        # Actually Env step returns result of THAT step.
+        # If Agent moves and wins, reward is 1 (or -1).
+        # We collected episode_reward.
+        
+        stats.update(episode_reward, proxy_info)
+        
+        if render:
+             if 'winner' in info:
+                 print(f"{'Agent' if info['winner'] == as_player else 'Opponent'} wins!")
+             elif draw:
+                 print("Draw!")
     
     return stats.get_stats_dict(), rewards

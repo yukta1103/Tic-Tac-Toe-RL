@@ -39,7 +39,35 @@ cd Tic-Tac-Toe-RL
 pip install -r requirements.txt
 ```
 
-## Usage
+## 🌐 Web Application (Recommended!)
+
+### Launch the Streamlit App
+
+For the best experience, use the interactive web interface:
+
+```bash
+streamlit run app.py
+```
+
+The app will open in your browser with:
+- 🎮 **Play Mode**: Click-to-play interface against the AI
+- 🤖 **Train Mode**: Train new agents with custom parameters
+- 📊 **Statistics**: View detailed performance metrics
+- 🎨 **Beautiful UI**: Modern design with animations
+
+### Features
+- Interactive game board with visual feedback
+- Real-time training progress visualization
+- Performance charts and analytics
+- Model management (save/load)
+- Session statistics tracking
+
+---
+
+## 💻 Command-Line Interface
+
+### Usage
+
 
 ### Train a New Agent
 
