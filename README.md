@@ -23,7 +23,7 @@ cd Tic-Tac-Toe-RL
 pip install -r requirements.txt
 ```
 
-## 🌐 Web Application (Recommended!)
+## Web Application
 
 ### Launch the Streamlit App
 
@@ -48,7 +48,7 @@ The app will open in your browser with:
 
 ---
 
-## 💻 Command-Line Interface
+## Command-Line Interface
 
 ### Usage
 
