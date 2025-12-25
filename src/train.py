@@ -93,28 +93,58 @@ def train_agent(
         state = env.reset()
         done = False
         
+        # For Q-learning in two-player games, we need to track:
+        # - The state before agent's move
+        # - The action the agent took
+        # Then update after opponent responds
+        prev_state = None
+        prev_action = None
+        
         while not done:
+            # Agent's turn (Player 1 / X)
             valid_actions = env.get_valid_actions()
             action = agent.select_action(state, valid_actions, training=True)
+            
+            # Remember this state-action pair
+            agent_state_before = state.copy()
+            agent_action = action
+            
             next_state, reward, done, info = env.step(action)
             
             if done:
-                agent.update(state, action, reward, next_state, done, [])
+                # Agent won immediately
+                agent.update(agent_state_before, agent_action, reward, next_state, done, [])
                 stats.update(reward, info)
                 break
             
-            opp_state = next_state
-            opp_valid_actions = env.get_valid_actions()
-            opp_action = opponent_agent.select_action(opp_state, opp_valid_actions)
+            # Now it's opponent's turn
+            state_after_agent = next_state.copy()
+            
+            # Opponent's turn (Player -1 / O)
+            valid_actions = env.get_valid_actions()
+            opp_action = opponent_agent.select_action(state_after_agent, valid_actions)
             next_state, reward, done, info = env.step(opp_action)
             
-            agent_reward = -reward if done else 0
-            agent.update(state, action, agent_reward, next_state, done, env.get_valid_actions())
+            # Now we can update the agent's Q-value
+            # The "next state" from agent's perspective is after opponent moved
+            state_after_opponent = next_state.copy()
             
             if done:
-                stats.update(-reward, info)  
-            
-            state = next_state
+                # Opponent won
+                agent_reward = -1.0
+                agent.update(agent_state_before, agent_action, agent_reward, state_after_opponent, done, [])
+                
+                # Update stats
+                agent_info = info.copy()
+                if 'winner' in agent_info:
+                    agent_info['winner'] = -agent_info['winner']
+                stats.update(agent_reward, agent_info)
+                break
+            else:
+                # Game continues
+                # Agent gets 0 reward for this move (didn't win or lose yet)
+                agent.update(agent_state_before, agent_action, 0, state_after_opponent, False, env.get_valid_actions())
+                state = state_after_opponent
         
         if epsilon_decay:
             agent.decay_epsilon()
