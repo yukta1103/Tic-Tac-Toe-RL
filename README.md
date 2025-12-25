@@ -10,22 +10,6 @@ A reinforcement learning project that trains an AI agent to play Tic-Tac-Toe usi
 - **Flexible Training**: Configurable hyperparameters (learning rate, discount factor, exploration rate)
 - **Model Persistence**: Save and load trained agents
 
-## Project Structure
-
-```
-Tic-Tac-Toe-RL/
-├── src/
-│   ├── environment.py    # Tic-Tac-Toe game environment
-│   ├── agents.py         # Q-Learning and Random agents
-│   └── train.py          # Training and evaluation logic
-├── tests/
-│   └── test_environment.py  # Unit tests
-├── models/               # Saved trained models
-├── results/              # Training results and logs
-├── main.py               # Main entry point
-└── requirements.txt      # Python dependencies
-```
-
 ## Installation
 
 1. Clone the repository:
@@ -103,31 +87,6 @@ Watch the agent play against a random opponent:
 python main.py --mode demo --episodes 10 --model models/agent.pkl
 ```
 
-## Command-Line Arguments
-
-- `--mode`: Mode to run (`train`, `play`, `demo`)
-- `--episodes`: Number of training/demo episodes (default: 10000)
-- `--opponent`: Opponent type for training (default: `random`)
-- `--alpha`: Learning rate (default: 0.1)
-- `--gamma`: Discount factor (default: 0.99)
-- `--epsilon`: Initial exploration rate (default: 0.2)
-- `--epsilon-decay`: Enable epsilon decay during training (default: True)
-- `--print-every`: Print statistics every N episodes (default: 1000)
-- `--save-path`: Path to save trained agent (default: `models/agent.pkl`)
-- `--model`: Path to load trained model (default: `models/agent.pkl`)
-
-## Running Tests
-
-Run the test suite:
-```bash
-pytest tests/test_environment.py -v
-```
-
-Or:
-```bash
-python tests/test_environment.py
-```
-
 ## How It Works
 
 ### Environment
@@ -159,15 +118,6 @@ After training for 10,000+ episodes, the agent should achieve:
 - **Win Rate**: 85-95% against random opponent
 - **Loss Rate**: 0-5%
 - **Draw Rate**: 5-15%
-
-## Future Enhancements
-
-- [ ] Self-play training (agent vs agent)
-- [ ] Deep Q-Network (DQN) implementation
-- [ ] GUI for playing against the agent
-- [ ] Training visualization and learning curves
-- [ ] Minimax opponent for harder training
-- [ ] Multi-agent tournament mode
 
 ## License
 
